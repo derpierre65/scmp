@@ -1,0 +1,54 @@
+<h1>
+	<i class="fa fa-globe"></i> <span localize="scmp_title"></span> <i class="fa fa-times pull-right close-button" close-all-ui></i>
+</h1>
+
+<div>
+	<ul class="tab-list" style="display: inline-block; margin-bottom: 0;">
+		<li ng-class="{ active: ctrl.tab == 'start' }" ng-click="ctrl.tab = 'start'" localize="scmp_connect"></li>
+		<li ng-class="{ active: ctrl.tab == 'players' }" ng-click="ctrl.tab = 'players';" localize="scmp_players" ng-if="scmpCtrl.isConnected"></li>
+	</ul>
+
+	<div class="padding" ng-if="ctrl.tab == 'start'">
+		<div class="alert alert-danger margin-bottom" ng-if="ctrl.error">{{ctrl.error}}</div>
+		<div class="alert alert-danger margin-bottom" ng-if="scmpCtrl.error" ng-bind="scmpCtrl.error"></div>
+
+		<div class="flex-column item-list" style="height: 100%" ng-if="!scmpCtrl.isConnected && !scmpCtrl.isServer">
+			<div class="flex1 item" style="margin: 0;">
+				<form class="content" ng-if="!scmpCtrl.isConnected">
+					<div class="flex-super-center">
+						<input class="text-center" type="text" ng-model="scmpCtrl.model.connect.ip" ng-disabled="scmpCtrl.isConnecting" placeholder="{{ GetLocalized('scmp_connect_enter_serverip') }}">
+					</div>
+
+					<div class="text-center margin-top">
+						<button ng-click="scmpCtrl.connect()" ng-disabled="!scmpCtrl.model.connect.ip || scmpCtrl.isConnecting"><i class="fa fa-refresh fa-spin" ng-if="scmpCtrl.isConnecting"></i>
+							<span localize="scmp_connect"></span></button>
+					</div>
+				</form>
+				<div class="content" ng-if="scmpCtrl.isConnected">
+					<div class="text-center margin-top">
+						<button class="red" ng-click="scmpCtrl.disconnect()" localize="scmp_disconnect"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="flex-column item-list margin-top" style="height: 100%" ng-if="!scmpCtrl.isConnected">
+			<div class="flex1 item" style="margin: 0;">
+				<form class="content" ng-if="!scmpCtrl.isServer">
+					<div class="flex-super-center">
+						<input class="text-center" min="1024" max="65535" type="number" ng-model="scmpCtrl.model.create.port" placeholder="{{ GetLocalized('scmp_create_enter_port') }}">
+					</div>
+
+					<div class="text-center margin-top">
+						<button ng-click="scmpCtrl.startServer()"><span localize="scmp_server_start"></span></button>
+					</div>
+				</form>
+				<div class="content" ng-if="scmpCtrl.isServer">
+					<div class="text-center margin-top">
+						<button class="red" ng-click="scmpCtrl.stopServer()" localize="scmp_server_stop"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
