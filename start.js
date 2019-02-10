@@ -1,5 +1,7 @@
 const io = require('socket.io-client');
 
+const DefaultPort = 25565;
+
 let _modPath;
 let SCMP = {
 	Server: null,
@@ -12,6 +14,12 @@ let SCMP = {
 let $rootScope = GetRootScope();
 
 function createConnection(ip) {
+	// add default port to ip
+	let ipSplit = ip.split(':');
+	if (ipSplit.length === 1) {
+		ip = ip + ':' + DefaultPort;
+	}
+
 	SCMP.Socket = io('http://' + ip, {
 		query: {
 			name: $rootScope.settings.companyName
@@ -60,7 +68,7 @@ exports.initialize = (modPath) => {
 
 			this.model = {
 				connect: {
-					ip: SCMP.serverIP
+					ip: SCMP.serverIP || localStorage.getItem('scmp_connect_ip') || ''
 				},
 				create: {
 					port: 25565
@@ -97,7 +105,7 @@ exports.initialize = (modPath) => {
 				this.isServer = false;
 				this.isConnected = SCMP.isConnected = false;
 			};
-			this.connect = function () {
+			this.connect = () => {
 				if (SCMP.isConnecting || SCMP.Server !== null) {
 					return false;
 				}
@@ -108,12 +116,16 @@ exports.initialize = (modPath) => {
 				SCMP.connectErrors = 0;
 				SCMP.serverIP = this.model.connect.ip;
 
+				localStorage.setItem('scmp_connect_ip', this.model.connect.ip);
+
 				createConnection(SCMP.serverIP);
 
 				SCMP.Socket
 				    .on('connect', () => {
-					    SCMP.isConnecting = this.isConnecting = false;
-					    SCMP.isConnected = this.isConnected = true;
+					    $timeout(() => {
+						    SCMP.isConnecting = this.isConnecting = false;
+						    SCMP.isConnected = this.isConnected = true;
+					    }, 0);
 				    })
 				    .on('disconnect', () => {
 					    SCMP.isConnected = this.isConnected = false;

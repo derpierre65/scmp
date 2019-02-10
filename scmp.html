@@ -11,7 +11,7 @@
 	<div class="padding" ng-if="ctrl.tab == 'start'">
 		<div class="alert alert-danger margin-bottom" ng-if="scmpCtrl.error" ng-bind="scmpCtrl.error"></div>
 
-		<div class="flex-column item-list" style="height: 100%" ng-if="!scmpCtrl.isConnected && !scmpCtrl.isServer">
+		<div class="flex-column item-list" style="height: 100%" ng-if="!scmpCtrl.isServer">
 			<div class="flex1 item" style="margin: 0;">
 				<form class="content" ng-if="!scmpCtrl.isConnected">
 					<div class="flex-super-center">
