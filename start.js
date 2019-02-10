@@ -1,16 +1,24 @@
-let $rootScope = GetRootScope();
-let _modPath;
-
 const io = require('socket.io-client');
 
+let _modPath;
 let SCMP = {
 	Server: null,
+	Socket: null,
 	isConnected: false,
 	isConnecting: false,
 	serverIP: null,
-	connectErrors: 0,
-	socket: null
+	connectErrors: 0
 };
+let $rootScope = GetRootScope();
+
+function createConnection(ip) {
+	SCMP.Socket = io('http://' + ip, {
+		query: {
+			name: $rootScope.settings.companyName
+		},
+		timeout: 10000
+	});
+}
 
 exports.initialize = (modPath) => {
 	_modPath = modPath;
@@ -39,7 +47,7 @@ exports.initialize = (modPath) => {
 		viewPath: _modPath + 'scmp.html',
 		controller: ['$rootScope', '$scope', '$timeout', function ($rootScope, $scope, $timeout) {
 			$scope.GetLocalized = Helpers.GetLocalized;
-			$scope.ctrl = {
+			$scope.$parent.ctrl = {
 				error: null,
 				tab: 'start'
 			};
@@ -47,7 +55,7 @@ exports.initialize = (modPath) => {
 			// scmpCtrl
 			this.isConnecting = SCMP.isConnecting;
 			this.isConnected = SCMP.isConnected;
-			this.error = '';
+			this.error = null;
 			this.isServer = SCMP.Server !== null;
 
 			this.model = {
@@ -60,78 +68,72 @@ exports.initialize = (modPath) => {
 			};
 
 			this.disconnect = () => {
-				SCMP.socket.close();
+				SCMP.Socket.close();
 
 				this.isConnected = SCMP.isConnected = false;
 			};
 			this.startServer = () => {
 				this.isServer = true;
+				this.error = null;
+				this.isConnected = SCMP.isConnected = true;
 
 				SCMP.Server = require('socket.io')(this.model.create.port);
 				SCMP.Server.sockets.on('connection', function (socket) {
 					console.log('new connection', socket.handshake.query.name);
+
+					// todo send player list to connected client :)
+					//socket.emit('playerlist');
 				});
+
+				// owner connect as player to handle owner as player
+				createConnection('localhost:' + this.model.create.port);
 			};
 			this.stopServer = () => {
+				// close socket and server
+				SCMP.Socket.close();
 				SCMP.Server.close();
-
 				SCMP.Server = null;
+
 				this.isServer = false;
+				this.isConnected = SCMP.isConnected = false;
 			};
-			this.connect = function (){
+			this.connect = function () {
 				if (SCMP.isConnecting || SCMP.Server !== null) {
 					return false;
 				}
 
-				this.isConnecting = true;
-				SCMP.isConnecting = true;
+				this.error = null;
 
+				SCMP.isConnecting = this.isConnecting = true;
 				SCMP.connectErrors = 0;
 				SCMP.serverIP = this.model.connect.ip;
-				SCMP.socket = io('http://' + SCMP.serverIP, {
-					query: {
-						name: $rootScope.settings.companyName
-					},
-					timeout: 10000
-				});
 
-				$timeout(() => {
-					console.log('timeout over');
-					$scope.ctrl.error = 'XD';
-					this.error = 'this XD';
-				}, 2000);
+				createConnection(SCMP.serverIP);
 
-				SCMP.socket
+				SCMP.Socket
 				    .on('connect', () => {
-					    this.isConnecting = false;
-					    SCMP.isConnecting = false;
-
-					    this.isConnected = true;
-					    SCMP.isConnected = true;
+					    SCMP.isConnecting = this.isConnecting = false;
+					    SCMP.isConnected = this.isConnected = true;
 				    })
 				    .on('disconnect', () => {
-					    this.isConnected = false;
-					    SCMP.isConnected = false;
-
-					    SCMP.socket.close();
+					    SCMP.isConnected = this.isConnected = false;
+					    SCMP.Socket.close();
 				    })
 				    .on('connect_error', () => {
-					    SCMP.connectErrors++;
-					    //$scope.error = 'Verbindung zum Server fehlgeschlagen. Es wird erneut versucht eine Verbindung herzustellen. (Versuch #' + SCMP.connectErrors + '/3)';
-
 					    $timeout(() => {
-						    this.error = 'XD';
-					    },0)
+						    SCMP.connectErrors++;
 
-					    //$scope.$apply();
-				        console.log('connection failed');
+						    if (SCMP.connectErrors >= 3) {
+							    this.isConnecting = false;
+							    this.error = Helpers.GetLocalized('scmp_connect_failed');
 
-					    if (SCMP.connectErrors >= 3) {
-					    	console.log('stop connecting ...');
-						    this.isConnecting = false;
-						    SCMP.isConnecting = false;
-						    SCMP.socket.close();
-					    }
+							    SCMP.isConnecting = false;
+							    SCMP.Socket.close();
+						    }
+						    else {
+							    this.error = Helpers.GetLocalized('scmp_connect_failed_retry', {try: SCMP.connectErrors});
+						    }
+					    }, 0);
 				    });
 			};
 		}]
@@ -140,7 +142,7 @@ exports.initialize = (modPath) => {
 
 exports.onLoadGame = settings => {
 	//set translations for new products
-	if ($rootScope.options.language == 'de') {
+	if ($rootScope.options.language === 'de') {
 		//German Language selected
 		Language['scmp_title'] = 'Startup Company Mehrspieler';
 		Language['scmp_connect'] = 'Verbinden';
@@ -149,6 +151,8 @@ exports.onLoadGame = settings => {
 		Language['scmp_server_start'] = 'Server starten';
 		Language['scmp_server_stop'] = 'Server stoppen';
 		Language['scmp_connect_enter_serverip'] = 'Server IP (Beispiel: 127.0.0.1 oder localhost)';
+		Language['scmp_connect_failed_retry'] = 'Zum Server konnte keine Verbindung hergestellt werden. Versuch {try}/3';
+		Language['scmp_connect_failed'] = 'Zum Server konnte keine Verbindung hergestellt werden. Bitte überprüfen Sie die Adresse und versuchen es erneut.';
 	}
 	else {
 		//Default language

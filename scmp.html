@@ -9,7 +9,6 @@
 	</ul>
 
 	<div class="padding" ng-if="ctrl.tab == 'start'">
-		<div class="alert alert-danger margin-bottom" ng-if="ctrl.error">{{ctrl.error}}</div>
 		<div class="alert alert-danger margin-bottom" ng-if="scmpCtrl.error" ng-bind="scmpCtrl.error"></div>
 
 		<div class="flex-column item-list" style="height: 100%" ng-if="!scmpCtrl.isConnected && !scmpCtrl.isServer">
@@ -20,8 +19,7 @@
 					</div>
 
 					<div class="text-center margin-top">
-						<button ng-click="scmpCtrl.connect()" ng-disabled="!scmpCtrl.model.connect.ip || scmpCtrl.isConnecting"><i class="fa fa-refresh fa-spin" ng-if="scmpCtrl.isConnecting"></i>
-							<span localize="scmp_connect"></span></button>
+						<button ng-click="scmpCtrl.connect()" ng-disabled="!scmpCtrl.model.connect.ip || scmpCtrl.isConnecting"><i class="fa fa-refresh fa-spin" ng-if="scmpCtrl.isConnecting"></i> <span localize="scmp_connect"></span></button>
 					</div>
 				</form>
 				<div class="content" ng-if="scmpCtrl.isConnected">
@@ -32,9 +30,9 @@
 			</div>
 		</div>
 
-		<div class="flex-column item-list margin-top" style="height: 100%" ng-if="!scmpCtrl.isConnected">
+		<div class="flex-column item-list margin-top" style="height: 100%" ng-if="(!scmpCtrl.isConnected || scmpCtrl.isServer) && !scmpCtrl.isConnecting">
 			<div class="flex1 item" style="margin: 0;">
-				<form class="content" ng-if="!scmpCtrl.isServer">
+				<div class="content" ng-if="!scmpCtrl.isServer">
 					<div class="flex-super-center">
 						<input class="text-center" min="1024" max="65535" type="number" ng-model="scmpCtrl.model.create.port" placeholder="{{ GetLocalized('scmp_create_enter_port') }}">
 					</div>
@@ -42,7 +40,7 @@
 					<div class="text-center margin-top">
 						<button ng-click="scmpCtrl.startServer()"><span localize="scmp_server_start"></span></button>
 					</div>
-				</form>
+				</div>
 				<div class="content" ng-if="scmpCtrl.isServer">
 					<div class="text-center margin-top">
 						<button class="red" ng-click="scmpCtrl.stopServer()" localize="scmp_server_stop"></button>
@@ -50,5 +48,9 @@
 				</div>
 			</div>
 		</div>
+	</div>
+
+	<div class="padding" ng-if="ctrl.tab === 'players'">
+		ho player list :D
 	</div>
 </div>
